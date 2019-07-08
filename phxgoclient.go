@@ -153,7 +153,6 @@ func (phx *PheonixGoSocket) OpenChannel(topic string) (*Channel, error) {
 		return cha, nil
 	}
 
-	//log.Printf("connecting to %s", u.String())
 	return &ch, nil
 }
 
