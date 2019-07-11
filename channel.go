@@ -162,7 +162,6 @@ func (channel *Channel) RawPush(event string, payload interface{}) {
 // Push event with payload to channel
 func (channel *Channel) Push(event string, payload interface{}) error {
 
-	// Payload{"E7AD-49CB-9010-47F7-A06E-9D2D-3351-DD1C"}
 	if channel.CanPush() {
 		channel.RawPush(event, payload)
 		return nil
@@ -200,7 +199,7 @@ func (client Client) MakeChannel(topic string) Channel {
 }
 
 func (client Client) MakeAndJoinAChannel(topic string, payload interface{}) Channel {
-	ch := client.MakeChannel("room:E7AD-49CB-9010-47F7-A06E-9D2D-3351-DD1C")
+	ch := client.MakeChannel(topic)
 	ch.Join(payload)
 	return ch
 }
