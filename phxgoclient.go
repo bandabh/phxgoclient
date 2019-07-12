@@ -42,7 +42,9 @@ func (phx *PheonixGoSocket) SetCustomTimeout(interval time.Duration) {
 }
 
 func (phx *PheonixGoSocket) ClosePheonixWebsocket() {
-	phx.HeartbeatWorker.Shutdown()
+	if phx.HeartbeatWorker != nil {
+		phx.HeartbeatWorker.Shutdown()
+	}
 	phx.Status = PhxGoClosed
 	phx.Channels = nil
 }
