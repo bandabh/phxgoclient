@@ -7,15 +7,19 @@ import (
 	"fmt"
 	"errors"
 	"encoding/json"
+	"strings"
 )
 
 type Client struct {
+	Url url.URL
 	Socket *websocket.Conn
 }
 
 type Channel struct {
-	State State
-	Topic string
+	State          State
+	Topic          string
+
+	InitialPayload interface{}
 
 	Client Client
 
@@ -44,10 +48,24 @@ type Payload struct {
 	Response interface{} `json:"response"`
 }
 
-func (channel *Channel) Reconnect(payload interface{}) {
+func (channel *Channel) Reconnect() {
 	if channel.State == ErroredState {
-		channel.Join(payload)
+		channel.Join(channel.InitialPayload)
 	}
+}
+
+func (channel *Channel) ForceReconnect() error {
+	client, err := Connect(channel.Client.Url)
+
+	channel.Client = *client
+
+	if err != nil {
+		return err
+	}
+
+	channel.Join(channel.InitialPayload)
+
+	return nil
 }
 
 func (channel *Channel) incrementRef() int64 {
@@ -127,6 +145,10 @@ func unwrapResponse(b []byte) (bool, MessageResponse) {
 	return false, data
 }
 
+func checkIfSocketClose(err error) bool {
+	return strings.Contains(err.Error(), "websocket: close 1000")
+}
+
 func (channel *Channel) Read() MessageResponse {
 	var resp Message
 
@@ -137,7 +159,10 @@ func (channel *Channel) Read() MessageResponse {
 	status, response := unwrapResponse(prepared)
 
 	if err != nil {
-		println(err)
+		println(err.Error())
+		if checkIfSocketClose(err) {
+			channel.ForceReconnect()
+		}
 	}
 
 	if status {
@@ -156,6 +181,7 @@ func (channel *Channel) Read() MessageResponse {
 	}
 
 	return MessageResponse{resp.Topic, int(resp.Ref), Payload{"", resp.Payload}, resp.Event}
+
 }
 
 func (channel *Channel) CanPush() bool {
@@ -164,6 +190,8 @@ func (channel *Channel) CanPush() bool {
 
 func (channel *Channel) Join(payload interface{}) *Channel {
 	channel.State = JoiningState
+
+	channel.InitialPayload = payload
 
 	msg_push(channel, payload, JoinEvent)
 
@@ -209,6 +237,7 @@ func (client Client) MakeChannel(topic string) Channel {
 	channel := Channel{
 		ClosedState,
 		topic,
+		nil,
 		client,
 		0,
 		make(map[Event]ChannelCallbackFunc),
@@ -225,7 +254,6 @@ func (client Client) MakeAndJoinAChannel(topic string, payload interface{}) Chan
 }
 
 func Connect(url url.URL) (*Client, error) {
-
 	strUrl, errConv := checkUrl(url)
 
 	if errConv != nil {
@@ -234,6 +262,7 @@ func Connect(url url.URL) (*Client, error) {
 
 	socket, _, err := websocket.DefaultDialer.Dial(strUrl, nil)
 	client := Client{
+		url,
 		socket,
 	}
 
