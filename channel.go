@@ -6,6 +6,7 @@ import (
 	"log"
 	"fmt"
 	"errors"
+	"encoding/json"
 )
 
 type Client struct {
@@ -113,29 +114,47 @@ func (channel *Channel) Observe() (data interface{}, err error) {
 	return nil, errors.New("event not registered, or error while reading response")
 }
 
+func unwrapResponse(b []byte) (bool, MessageResponse) {
+	var data MessageResponse
+
+	json.Unmarshal(b, &data)
+
+	if data.Payload.Status != "" {
+		return true, data
+	}
+
+	return false, data
+}
+
 func (channel *Channel) Read() MessageResponse {
-	var resp MessageResponse
+	var resp Message
 
 	err := channel.Client.Socket.ReadJSON(&resp)
 
-	if err != nil{
+	prepared, _ := json.Marshal(resp)
+
+	status, response := unwrapResponse(prepared)
+
+	if err != nil {
 		println(err)
 	}
 
-	switch resp.Payload.Status {
-	case OkStatus.StatusToString():
-		channel.State = JoinedState
-		break
-	case ErrorStatus.StatusToString():
-		channel.State = ErroredState
-		break
-	case TimeoutStatus.StatusToString():
-		channel.State = ErroredState
-		break
+	if status {
+		switch response.Payload.Status {
+		case OkStatus.StatusToString():
+			channel.State = JoinedState
+			break
+		case ErrorStatus.StatusToString():
+			channel.State = ErroredState
+			break
+		case TimeoutStatus.StatusToString():
+			channel.State = ErroredState
+			break
+		}
+		return response
 	}
 
-	return resp
-
+	return MessageResponse{resp.Topic, int(resp.Ref), Payload{"", resp.Payload}, resp.Event}
 }
 
 func (channel *Channel) CanPush() bool {
