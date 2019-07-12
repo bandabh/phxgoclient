@@ -33,15 +33,16 @@ type Message struct {
 }
 
 type MessageResponse struct {
-	Topic string `json:"topic"`
-	Ref   int    `json:"ref"`
-	Payload struct {
-		Status   string      `json:"status"`
-		Response interface{} `json:"response"`
-	} `json:"payload"`
-	Event string `json:"event"`
+	Topic   string  `json:"topic"`
+	Ref     int     `json:"ref"`
+	Payload Payload `json:"payload"`
+	Event   string  `json:"event"`
 }
 
+type Payload struct {
+	Status   string      `json:"status"`
+	Response interface{} `json:"response"`
+}
 
 func (channel *Channel) Reconnect(payload interface{}) {
 	if channel.State == ErroredState {
