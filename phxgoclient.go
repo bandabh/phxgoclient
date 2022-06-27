@@ -51,11 +51,12 @@ func (phx *PheonixGoSocket) ClosePheonixWebsocket() {
 }
 
 // Creates New Pheonix Websocket connection
-func NewPheonixWebsocket(Host string, Path string, Schema string, CustomAbsoultePath bool) PheonixGoSocket {
+func NewPheonixWebsocket(Host string, Path string, Schema string, CustomAbsoultePath bool, RawQuery string) PheonixGoSocket {
 	return PheonixGoSocket{
 		Host,
 		Schema,
 		Path,
+        RawQuery, 
 		PhxGoClosed,
 		30 * time.Second,
 		CustomAbsoultePath,
