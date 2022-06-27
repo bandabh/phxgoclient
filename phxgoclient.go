@@ -21,6 +21,7 @@ type PheonixGoSocket struct {
 	Host   string
 	Schema string
 	Path   string
+    RawQuery string
 
 	Status PhxGoSocketStatus
 
@@ -82,7 +83,7 @@ func (phx PheonixGoSocket) Listen() error {
 		path = path + phx.Transport.ToPath()
 	}
 
-	u := url.URL{Scheme: phx.Schema, Host: phx.Host, Path: path}
+    u := url.URL{Scheme: phx.Schema, Host: phx.Host, Path: path, RawQuery: phx.RawQuery}
 
 	client, err := Connect(u)
 
