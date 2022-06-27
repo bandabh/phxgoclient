@@ -137,7 +137,7 @@ func (phx *PheonixGoSocket) OpenChannel(topic string) (*Channel, error) {
 		path = path + phx.Transport.ToPath()
 	}
 
-	u := url.URL{Scheme: phx.Schema, Host: phx.Host, Path: path}
+	u := url.URL{Scheme: phx.Schema, Host: phx.Host, Path: path, RawPath: phx.RawQuery}
 
 	client, err := Connect(u)
 
