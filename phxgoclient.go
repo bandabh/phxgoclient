@@ -1,11 +1,10 @@
 package phxgoclient
 
 import (
-	"log"
+	"errors"
+	"net/url"
 	"os"
 	"os/signal"
-	"net/url"
-	"errors"
 	"time"
 )
 
@@ -18,10 +17,10 @@ const (
 )
 
 type PheonixGoSocket struct {
-	Host   string
-	Schema string
-	Path   string
-    RawQuery string
+	Host     string
+	Schema   string
+	Path     string
+	RawQuery string
 
 	Status PhxGoSocketStatus
 
@@ -56,7 +55,7 @@ func NewPheonixWebsocket(Host string, Path string, Schema string, CustomAbsoulte
 		Host,
 		Schema,
 		Path,
-        RawQuery, 
+		RawQuery,
 		PhxGoClosed,
 		30 * time.Second,
 		CustomAbsoultePath,
@@ -84,7 +83,7 @@ func (phx PheonixGoSocket) Listen() error {
 		path = path + phx.Transport.ToPath()
 	}
 
-    u := url.URL{Scheme: phx.Schema, Host: phx.Host, Path: path, RawQuery: phx.RawQuery}
+	u := url.URL{Scheme: phx.Schema, Host: phx.Host, Path: path, RawQuery: phx.RawQuery}
 
 	client, err := Connect(u)
 
@@ -142,9 +141,8 @@ func (phx *PheonixGoSocket) OpenChannel(topic string) (*Channel, error) {
 	client, err := Connect(u)
 
 	if err != nil {
-		log.Fatal("dial:", err)
 		phx.Status = PhxGoError
-		return nil, err
+		return nil, errors.New("dial:" + err.Error())
 	}
 
 	ch := client.MakeChannel(topic)
