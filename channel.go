@@ -1,23 +1,23 @@
 package phxgoclient
 
 import (
-	"net/url"
-	"github.com/gorilla/websocket"
-	"log"
-	"fmt"
-	"errors"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"net/url"
 	"strings"
+
+	"github.com/gorilla/websocket"
 )
 
 type Client struct {
-	Url url.URL
+	Url    url.URL
 	Socket *websocket.Conn
 }
 
 type Channel struct {
-	State          State
-	Topic          string
+	State State
+	Topic string
 
 	InitialPayload interface{}
 
@@ -267,8 +267,7 @@ func Connect(url url.URL) (*Client, error) {
 	}
 
 	if err != nil {
-		log.Fatal("dial:", err)
-		return nil, errors.New("failed to connect")
+		return nil, errors.New("dial:" + err.Error())
 	}
 
 	return &client, nil
