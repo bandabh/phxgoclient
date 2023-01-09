@@ -85,17 +85,17 @@ func (phx PheonixGoSocket) Listen() error {
 
 	u := url.URL{Scheme: phx.Schema, Host: phx.Host, Path: path, RawQuery: phx.RawQuery}
 
-	client, err := Connect(u)
+	_, err := Connect(u)
 
 	if err != nil {
 		return err
 	}
 
-	phx.HeartbeatWorker = NewWorker(phx.Timeout, func() {
-		client.heartbeat()
-	})
+	// phx.HeartbeatWorker = NewWorker(phx.Timeout, func() {
+	// 	client.heartbeat()
+	// })
 
-	go phx.HeartbeatWorker.Run()
+	// go phx.HeartbeatWorker.Run()
 
 	return nil
 }
@@ -146,6 +146,10 @@ func (phx *PheonixGoSocket) OpenChannel(topic string) (*Channel, error) {
 	}
 
 	ch := client.MakeChannel(topic)
+	phx.HeartbeatWorker = NewWorker(phx.Timeout, func() {
+		ch.heartbeat()
+	})
+	go phx.HeartbeatWorker.Run()
 
 	cha, ok := phx.Channels[topic]
 
