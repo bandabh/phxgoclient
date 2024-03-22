@@ -1,11 +1,10 @@
 package phxgoclient
 
 import (
-	"log"
+	"errors"
+	"net/url"
 	"os"
 	"os/signal"
-	"net/url"
-	"errors"
 	"time"
 )
 
@@ -18,9 +17,10 @@ const (
 )
 
 type PheonixGoSocket struct {
-	Host   string
-	Schema string
-	Path   string
+	Host     string
+	Schema   string
+	Path     string
+	RawQuery string
 
 	Status PhxGoSocketStatus
 
@@ -50,11 +50,12 @@ func (phx *PheonixGoSocket) ClosePheonixWebsocket() {
 }
 
 // Creates New Pheonix Websocket connection
-func NewPheonixWebsocket(Host string, Path string, Schema string, CustomAbsoultePath bool) PheonixGoSocket {
+func NewPheonixWebsocket(Host string, Path string, Schema string, CustomAbsoultePath bool, RawQuery string) PheonixGoSocket {
 	return PheonixGoSocket{
 		Host,
 		Schema,
 		Path,
+		RawQuery,
 		PhxGoClosed,
 		30 * time.Second,
 		CustomAbsoultePath,
@@ -82,19 +83,19 @@ func (phx PheonixGoSocket) Listen() error {
 		path = path + phx.Transport.ToPath()
 	}
 
-	u := url.URL{Scheme: phx.Schema, Host: phx.Host, Path: path}
+	u := url.URL{Scheme: phx.Schema, Host: phx.Host, Path: path, RawQuery: phx.RawQuery}
 
-	client, err := Connect(u)
+	_, err := Connect(u)
 
 	if err != nil {
 		return err
 	}
 
-	phx.HeartbeatWorker = NewWorker(phx.Timeout, func() {
-		client.heartbeat()
-	})
+	// phx.HeartbeatWorker = NewWorker(phx.Timeout, func() {
+	// 	client.heartbeat()
+	// })
 
-	go phx.HeartbeatWorker.Run()
+	// go phx.HeartbeatWorker.Run()
 
 	return nil
 }
@@ -135,17 +136,20 @@ func (phx *PheonixGoSocket) OpenChannel(topic string) (*Channel, error) {
 		path = path + phx.Transport.ToPath()
 	}
 
-	u := url.URL{Scheme: phx.Schema, Host: phx.Host, Path: path}
+	u := url.URL{Scheme: phx.Schema, Host: phx.Host, Path: path, RawQuery: phx.RawQuery}
 
 	client, err := Connect(u)
 
 	if err != nil {
-		log.Fatal("dial:", err)
 		phx.Status = PhxGoError
-		return nil, err
+		return nil, errors.New("dial:" + err.Error())
 	}
 
 	ch := client.MakeChannel(topic)
+	phx.HeartbeatWorker = NewWorker(phx.Timeout, func() {
+		ch.heartbeat()
+	})
+	go phx.HeartbeatWorker.Run()
 
 	cha, ok := phx.Channels[topic]
 
